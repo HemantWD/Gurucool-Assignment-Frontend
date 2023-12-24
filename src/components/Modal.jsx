@@ -9,7 +9,7 @@ const Modal = ({ isOpen, onClose, title, onSubmit, task }) => {
   };
   return (
     isOpen && (
-      <div className=" fixed inset-0 flex items-center justify-center">
+      <div className=" fixed inset-0 flex items-center justify-center sm:w-full md:w-1/2 lg:w-1/3 xl:w-1/4 ">
         <div className=" bg-slate-600 fixed opacity-75 inset-0"></div>
         <div className=" bg-stone-200 p-6 rounded-lg z-10">
           <h2 className=" text-xl font-bold mb-4">{title}</h2>

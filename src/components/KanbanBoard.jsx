@@ -113,11 +113,11 @@ const KanbanBoard = () => {
   };
 
   return (
-    <div className="flex justify-center mt-8">
+    <div className="flex flex-wrap justify-center mt-8 space-x-4">
       {Object.keys(tasks).map((status) => (
         <div
           key={status}
-          className="w-96 p-4 border rounded-md bg-gray-200 mr-4"
+          className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 p-4 border rounded-md bg-gray-200 mb-4"
         >
           <h2 className="text-xl text-center font-bold mb-4 text-stone-600">
             {status}

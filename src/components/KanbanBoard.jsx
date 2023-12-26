@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaRegEdit, FaTrashAlt } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -6,8 +6,11 @@ import {
   updateTask,
   deleteTask,
   reorderTask,
+  // reorderTask,
 } from "../store/slices/taskSlice";
 import Modal from "./Modal";
+import toast from "react-hot-toast";
+import { useDrag, useDrop } from "react-dnd";
 
 const KanbanBoard = () => {
   const dispatch = useDispatch();
@@ -21,24 +24,35 @@ const KanbanBoard = () => {
     if (storedTask) {
       dispatch({ type: "tasks/loadTaskFromLocalStorage", payload: storedTask });
     }
+
+    // console.log(storedTask);
   }, [dispatch, selectedTask]);
 
-  const handleDrag = (result) => {
-    if (!result.destination) return;
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: "task",
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+  }));
 
-    dispatch(
-      reorderTask({
-        source: {
-          droppableId: result.source.droppableId,
-          index: result.source.index,
-        },
-        destination: {
-          droppableId: result.destination.droppableId,
-          index: result.destination.index,
-        },
-      })
-    );
-  };
+  const [, drop] = useDrop(() => ({
+    accept: "task",
+    drop: (item, monitor) => {
+      const { id, status } = item;
+      dispatch(
+        reorderTask({
+          source: {
+            droppableId: monitor.getItem().status,
+            index: monitor.getItem().index,
+          },
+          destination: {
+            droppableId: status,
+            index: monitor.getItem().index,
+          },
+        })
+      );
+    },
+  }));
 
   const handleActions = (action, status, taskTitle) => {
     if (action === "add") {
@@ -52,7 +66,7 @@ const KanbanBoard = () => {
 
       localStorage.setItem("tasks", JSON.stringify(updatedTask));
 
-      alert(`${status} Added`);
+      toast.success(`${status} Added`);
     } else if (action === "update" && selectedTask) {
       const updatingTask = { ...selectedTask, title: taskTitle };
       dispatch(updateTask({ status, task: updatingTask }));
@@ -64,7 +78,7 @@ const KanbanBoard = () => {
         ),
       };
       localStorage.setItem("tasks", JSON.stringify(updatedTask));
-      alert(`${status} Added`);
+      toast.success(`${status} Added`);
     }
     //  else if (action === "delete" && selectedTask) {
     //   console.log("Before deletion - Redux state:", tasks);
@@ -98,7 +112,7 @@ const KanbanBoard = () => {
         payload: updatedTask,
       });
     }
-    alert(`${task.title} Deleted`);
+    toast.success(`${task.title} Deleted`);
   };
 
   const openModal = (status, action, task) => {
@@ -106,66 +120,72 @@ const KanbanBoard = () => {
     setSelectedTask(task);
     setIsModalOpen(true);
   };
-  const closeModal = (status, action, task) => {
+  const closeModal = () => {
     setSelectedStatus(null);
     setSelectedTask(null);
     setIsModalOpen(false);
   };
 
   return (
-    <div className="flex flex-wrap justify-center mt-8 space-x-4">
-      {Object.keys(tasks).map((status) => (
-        <div
-          key={status}
-          className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 p-4 border rounded-md bg-gray-200 mb-4"
-        >
-          <h2 className="text-xl text-center font-bold mb-4 text-stone-600">
-            {status}
-          </h2>
-
-          <div className="space-y-4">
-            {tasks[status].map((task) => (
-              <div
-                key={task.id}
-                className="p-4 border-2 bg-white rounded-md cursor-pointer hover:bg-blue-200"
-              >
-                <li className=" text-stone-500">{task.title}</li>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => openModal(status, "update", task)}
-                    className="mr-2"
-                  >
-                    <FaRegEdit />
-                  </button>
-                  <button onClick={() => handleDeleteTask(status, task)}>
-                    <FaTrashAlt />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => openModal(status, "add")}
-            className=" px-6 py-2 rounded-md bg-stone-500 text-stone-50 mt-10 w-full hover:bg-stone-950"
+    <>
+      <div className="flex flex-wrap justify-center mt-8 space-x-4">
+        {Object.keys(tasks).map((status) => (
+          <div
+            key={status}
+            ref={drop}
+            className="w-full
+             sm:w-1/2 md:w-1/3 lg:w-1/4 p-4 border rounded-md bg-gray-200 mb-4"
           >
-            Add Task
-          </button>
-        </div>
-      ))}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        title={selectedStatus ? `${selectedStatus} Task ` : "Task"}
-        onSubmit={(taskTitle) =>
-          handleActions(
-            selectedTask ? "update" : "add",
-            selectedStatus,
-            taskTitle
-          )
-        }
-      />
-    </div>
+            <h2 className="text-xl text-center font-bold mb-4 text-stone-600">
+              {status}
+            </h2>
+
+            <div className="space-y-4">
+              {tasks[status].map((task) => (
+                <div
+                  ref={drag}
+                  key={task.id}
+                  className={`p-4 border-2 bg-white rounded-md cursor-pointer ${
+                    isDragging ? "opacity-25" : "opacity-100"
+                  } hover:bg-blue-200`}
+                >
+                  <li className=" text-stone-500">{task.title}</li>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => openModal(status, "update", task)}
+                      className="mr-2"
+                    >
+                      <FaRegEdit />
+                    </button>
+                    <button onClick={() => handleDeleteTask(status, task)}>
+                      <FaTrashAlt />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => openModal(status, "add")}
+              className=" px-6 py-2 rounded-md bg-stone-500 text-stone-50 mt-10 w-full hover:bg-stone-950"
+            >
+              Add Task
+            </button>
+          </div>
+        ))}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          title={selectedStatus ? `${selectedStatus} Task ` : "Task"}
+          onSubmit={(taskTitle) =>
+            handleActions(
+              selectedTask ? "update" : "add",
+              selectedStatus,
+              taskTitle
+            )
+          }
+        />
+      </div>
+    </>
   );
 };
 

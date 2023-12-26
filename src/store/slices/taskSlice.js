@@ -21,7 +21,6 @@ const taskSlice = createSlice({
     },
     deleteTask: (state, action) => {
       const { id, status } = action.payload;
-
       state[status] = state[status].filter((task) => task.id !== id);
     },
     loadTaskFromLocalStorage: (state, action) => {
@@ -29,7 +28,6 @@ const taskSlice = createSlice({
     },
     reorderTask: (state, action) => {
       const { source, destination } = action.payload;
-
       const [removed] = state[source.droppableId].splice(source.index, 1);
       state[destination.droppableId].splice(destination.index, 0, removed);
     },
